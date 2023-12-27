@@ -29,15 +29,30 @@ function init()
     wait_location_update("secondary", 0)
 end
 
-function move_primary(to)
-    if to < current_location.primary then
-        move_backward()
-        wait_location_update("primary", to)
-    elseif to > current_location.primary then
-        move_forward()
-        wait_location_update("primary", to)
+function move_to(primary, secondary)
+    print()
+    print("moving to " .. primary .. ", " .. secondary)
+    move_axis("primary", primary)
+    move_axis("secondary", secondary)
+end
+
+function move_axis(axis, to)
+    if to < current_location[axis] then
+        if axis == "primary" then
+            move_backward()
+        else
+            move_left()
+        end
+        wait_location_update(axis, to)
+    elseif to > current_location[axis] then
+        if axis == "primary" then
+            move_forward()
+        else
+            move_right()
+        end
+        wait_location_update(axis, to)
     end
-    halt_primary()
+    halt_axis(axis)
 end
 
 function wait_location_update(axis, target)
@@ -63,13 +78,11 @@ end
 
 function move_forward()
     redstone.setOutput(SIDE_PRIMARY_AXIS, false)
-    redstone.setOutput(SIDE_SECONDARY_AXIS, true)
     redstone.setOutput(SIDE_GEARSHIFT, false)
 end
 
 function move_backward()
     redstone.setOutput(SIDE_PRIMARY_AXIS, false)
-    redstone.setOutput(SIDE_SECONDARY_AXIS, true)
     redstone.setOutput(SIDE_GEARSHIFT, true)
 end
 
@@ -86,23 +99,28 @@ function move_right()
 end
 
 function halt_movement()
-    halt_primary()
-    halt_secondary()
+    halt_axis("primary")
+    halt_axis("secondary")
 end
 
-function halt_primary()
-    redstone.setOutput(SIDE_PRIMARY_AXIS, true)
-end
-
-function halt_secondary()
-    redstone.setOutput(SIDE_SECONDARY_AXIS, true)
+function halt_axis(axis)
+    -- print("HALT " .. axis)
+    if axis == "primary" then
+        redstone.setOutput(SIDE_PRIMARY_AXIS, true)
+    elseif axis == "secondary" then
+        redstone.setOutput(SIDE_SECONDARY_AXIS, true)
+    else
+        print(axis .. " is not an axis")
+        error()
+    end
 end
 
 init()
-move_primary(2)
-move_primary(0)
-move_primary(1)
-
+move_to(2, 2)
+sleep(2)
+move_to(0, 2)
+sleep(2)
+move_to(1, 1)
 
 return {
     move_forward = move_forward,
