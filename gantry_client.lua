@@ -1,8 +1,8 @@
-
 MESSAGE = require("gantry_client_config")
 SIDE_REDSTONE = "back"
 SIDE_MODEM = "right"
 PROTOCOL = "gantry"
+MAX_ATTEMPTS = 20
 
 function check_and_notify()
     if redstone.getInput(SIDE_REDSTONE) then
@@ -17,9 +17,15 @@ end
 function init_rednet()
     rednet.open(SIDE_MODEM)
     host_id = rednet.lookup(PROTOCOL)
-    if host_id == nil then
-        print("Error: gantry host not found")
-        error()
+    local attempts = 1
+    while host_id == nil do
+        attempts = attempts + 1
+        sleep(2)
+        if attempts > MAX_ATTEMPTS then
+            print("Error: gantry host not found")
+            error()
+        end
+        host_id = rednet.lookup(PROTOCOL)
     end
 end
 
@@ -28,7 +34,7 @@ function main()
     init_rednet()
 
     while true do
-        local eventData = {os.pullEvent()}
+        local eventData = { os.pullEvent() }
         local event = eventData[1]
 
         if event == "redstone" then
