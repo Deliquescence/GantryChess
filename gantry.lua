@@ -29,6 +29,13 @@ function init()
     wait_location_update("secondary", 0)
 end
 
+function transport_from_to(p1, s1, p2, s2)
+    move_to(p1, s1)
+    toggle_sticker()
+    move_to(p2, s2)
+    toggle_sticker()
+end
+
 function move_to(primary, secondary)
     print()
     print("moving to " .. primary .. ", " .. secondary)
@@ -115,12 +122,20 @@ function halt_axis(axis)
     end
 end
 
+function toggle_sticker()
+    redstone.setOutput(SIDE_STICKER, true)
+    sleep(0.2)
+    redstone.setOutput(SIDE_STICKER, false)
+end
+
 init()
-move_to(2, 2)
-sleep(2)
-move_to(0, 2)
-sleep(2)
-move_to(1, 1)
+
+--transport_from_to(1, 1, 2, 2)
+-- move_to(2, 2)
+-- sleep(2)
+-- move_to(0, 2)
+-- sleep(2)
+-- move_to(1, 1)
 
 return {
     move_forward = move_forward,
