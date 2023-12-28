@@ -1,11 +1,15 @@
+-- clockwise input into gearshift
 -- Primary: forward/back
 SIDE_PRIMARY_AXIS = "left"
 -- Secondary: left/right
 SIDE_SECONDARY_AXIS = "back"
 SIDE_STICKER = "right"
 SIDE_GEARSHIFT = "top"
--- clockwise input into gearshift
+SIDE_STICKER = "right"
+SIDE_HEAD_CLUTCH = "front"
 
+PISTON_DEBOUNCE = 0.5
+STICKER_DEBOUNCE = 0.20
 
 SIDE_MODEM = "bottom"
 PROTOCOL = "gantry"
@@ -20,6 +24,8 @@ function init()
         redstone.setOutput(side, false)
     end
 
+    lower_piston()
+
     print("Attempting primary axis initialization")
     move_backward()
     wait_location_update("primary", 0)
@@ -31,9 +37,14 @@ end
 
 function transport_from_to(p1, s1, p2, s2)
     move_to(p1, s1)
+    raise_piston()
     toggle_sticker()
+    lower_piston()
+
     move_to(p2, s2)
+    raise_piston()
     toggle_sticker()
+    lower_piston()
 end
 
 function move_to(primary, secondary)
@@ -122,18 +133,38 @@ function halt_axis(axis)
     end
 end
 
+function raise_piston()
+    redstone.setOutput(SIDE_GEARSHIFT, true)
+    redstone.setOutput(SIDE_HEAD_CLUTCH, true)
+    sleep(PISTON_DEBOUNCE)
+    redstone.setOutput(SIDE_HEAD_CLUTCH, false)
+    sleep(PISTON_DEBOUNCE)
+end
+
+function lower_piston()
+    redstone.setOutput(SIDE_GEARSHIFT, false)
+    redstone.setOutput(SIDE_HEAD_CLUTCH, true)
+    sleep(PISTON_DEBOUNCE)
+    redstone.setOutput(SIDE_HEAD_CLUTCH, false)
+    sleep(PISTON_DEBOUNCE)
+end
+
 function toggle_sticker()
+    sleep(STICKER_DEBOUNCE)
     redstone.setOutput(SIDE_STICKER, true)
-    sleep(0.2)
+    sleep(STICKER_DEBOUNCE)
     redstone.setOutput(SIDE_STICKER, false)
+    sleep(STICKER_DEBOUNCE)
 end
 
 init()
 
---transport_from_to(1, 1, 2, 2)
+-- transport_from_to(2, 0, 0, 2)
+-- sleep(2)
+-- transport_from_to(1, 1, 2, 2)
 -- move_to(2, 2)
 -- sleep(2)
--- move_to(0, 2)
+move_to(0, 2)
 -- sleep(2)
 -- move_to(1, 1)
 
