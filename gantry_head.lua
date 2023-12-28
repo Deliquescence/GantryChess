@@ -1,6 +1,6 @@
 PROTOCOL_HEAD = "gantry_head"
 PROTOCOL_HOST = "gantry"
-SIDE_MODEM = "left"
+SIDE_MODEM = "right"
 INFO_SLOT = 1
 
 rednet.host(PROTOCOL_HEAD, "gantry0_head")
@@ -26,8 +26,12 @@ function send_status()
 end
 
 function get_status()
-    if not peripheral.isPresent("top") then
+    if not turtle.detectUp() then
         return "none"
+    end
+    if not peripheral.isPresent("top") then
+        print("error: block is present but not an inventory")
+        return "error_no_inventory"
     end
     local _specific_type, type = peripheral.getType("top")
     if type ~= "inventory" then
@@ -42,7 +46,9 @@ function get_status()
         return "error_no_item"
     end
 
-    return info.displayName
+    local status = info.displayName
+    print(status)
+    return status
 end
 
 function main_loop()

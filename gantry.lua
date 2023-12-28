@@ -8,7 +8,7 @@ SIDE_GEARSHIFT = "top"
 SIDE_STICKER = "right"
 SIDE_HEAD_CLUTCH = "front"
 
-PISTON_DEBOUNCE = 0.65
+PISTON_DEBOUNCE = 0.8
 STICKER_DEBOUNCE = 0.20
 
 SIDE_MODEM = "bottom"
@@ -22,6 +22,7 @@ current_location = {
     primary = nil,
     secondary = nil,
 }
+holding = nil
 
 function init()
     print("Initializing...")
@@ -124,14 +125,34 @@ end
 
 function transport_from_to(p1, s1, p2, s2)
     move_to(p1, s1)
-    raise_piston()
-    toggle_sticker()
-    lower_piston()
+    grab()
 
     move_to(p2, s2)
+    release()
+end
+
+function grab()
+    raise_piston()
+    local status = get_head_status()
+    if status:find("error") then
+        print("Can't grab here because of error head status " .. status)
+        lower_piston()
+        error()
+    elseif status == "none" then
+        print("Warning: grabbing nothing")
+    else
+        print("Grabbing " .. status)
+        holding = status
+    end
+    toggle_sticker()
+    lower_piston()
+end
+
+function release()
     raise_piston()
     toggle_sticker()
     lower_piston()
+    holding = nil
 end
 
 function move_to(primary, secondary)
@@ -268,7 +289,7 @@ init()
 -- transport_from_to(2, 0, 2, 1)
 -- sleep(2)
 -- transport_from_to(1, 1, 2, 2)
-transport_from_to(2, 0, 2, 0)
+transport_from_to(0, 2, 1, 0)
 -- transport_from_to(0, 0, 2, 2)
 -- move_to(2, 2)
 -- sleep(2)

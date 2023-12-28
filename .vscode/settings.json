@@ -3,7 +3,8 @@
         "redstone",
         "rednet",
         "sleep",
-        "peripheral"
+        "peripheral",
+        "turtle"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"
