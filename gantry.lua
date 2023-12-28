@@ -12,11 +12,9 @@ PISTON_DEBOUNCE = 0.8
 STICKER_DEBOUNCE = 0.20
 
 SIDE_MODEM = "bottom"
-PROTOCOL = "gantry"
+PROTOCOL_LOCATION = "gantry_location"
 PROTOCOL_HEAD = "gantry_head"
-
-rednet.open(SIDE_MODEM)
-rednet.host(PROTOCOL, "gantry0")
+PROTOCOL_CONTROL = "gantry_control"
 
 current_location = {
     primary = nil,
@@ -26,6 +24,9 @@ holding = nil
 
 function init()
     print("Initializing...")
+
+    rednet.open(SIDE_MODEM)
+    rednet.host(PROTOCOL_CONTROL, "gantry0_control")
 
     for _, side in pairs(redstone.getSides()) do
         -- Stop axis movement, reset everything else
@@ -123,11 +124,11 @@ function reset_location()
     wait_location_update("secondary", 0)
 end
 
-function transport_from_to(p1, s1, p2, s2)
-    move_to(p1, s1)
+function transport_from_to(fp, fs, tp, ts)
+    move_to(fp, fs)
     grab()
 
-    move_to(p2, s2)
+    move_to(tp, ts)
     release()
 end
 
@@ -183,10 +184,10 @@ end
 
 function wait_location_update(axis, target)
     while true do
-        local _id, message = rednet.receive(PROTOCOL, 5)
+        local _id, message = rednet.receive(PROTOCOL_LOCATION, 5)
         if message == nil then
             print("No message within timeout, sending broadcast")
-            rednet.broadcast("update_location", PROTOCOL)
+            rednet.broadcast("update_location", PROTOCOL_LOCATION)
         else
             parse_location_update(message)
             if message == axis .. "_" .. target then
@@ -198,9 +199,9 @@ end
 
 function force_location_update()
     print("Broadcasting to get current location")
-    rednet.broadcast("update_location", PROTOCOL)
+    rednet.broadcast("update_location", PROTOCOL_LOCATION)
     while true do
-        local _id, message = rednet.receive(PROTOCOL, 5)
+        local _id, message = rednet.receive(PROTOCOL_LOCATION, 5)
         if message == nil then
             return
         else
@@ -289,7 +290,7 @@ init()
 -- transport_from_to(2, 0, 2, 1)
 -- sleep(2)
 -- transport_from_to(1, 1, 2, 2)
-transport_from_to(0, 2, 1, 0)
+-- transport_from_to(0, 2, 1, 0)
 -- transport_from_to(0, 0, 2, 2)
 -- move_to(2, 2)
 -- sleep(2)

@@ -1,7 +1,9 @@
+---@diagnostic disable: undefined-field
 MESSAGE = require("gantry_client_config")
 SIDE_REDSTONE = "back"
 SIDE_MODEM = "right"
-PROTOCOL = "gantry"
+PROTOCOL_LOCATION = "gantry_location"
+PROTOCOL_CONTROL = "gantry_control"
 MAX_ATTEMPTS = 20
 
 function check_and_notify()
@@ -11,22 +13,21 @@ function check_and_notify()
 end
 
 function notify()
-    rednet.send(host_id, MESSAGE, PROTOCOL)
+    rednet.send(host_id, MESSAGE, PROTOCOL_LOCATION)
 end
 
 function init_rednet()
+    print("Initializing rednet")
     rednet.open(SIDE_MODEM)
-    host_id = rednet.lookup(PROTOCOL)
+    host_id = rednet.lookup(PROTOCOL_CONTROL)
     local attempts = 1
     while host_id == nil do
-        attempts = attempts + 1
+        print("Looking for host, attempt " .. attempts)
         sleep(2)
-        if attempts > MAX_ATTEMPTS then
-            print("Error: gantry host not found")
-            error()
-        end
-        host_id = rednet.lookup(PROTOCOL)
+        host_id = rednet.lookup(PROTOCOL_CONTROL)
+        attempts = attempts + 1
     end
+    print("Control host found")
 end
 
 function main()
@@ -43,7 +44,7 @@ function main()
             local sender = eventData[2]
             local message = eventData[3]
             local protocol = eventData[4]
-            if sender == host_id and protocol == PROTOCOL then
+            if sender == host_id and protocol == PROTOCOL_LOCATION then
                 check_and_notify()
             end
         end
