@@ -188,7 +188,7 @@ function wait_location_update(axis, target)
             print("No message within timeout, sending broadcast")
             rednet.broadcast("update_location", PROTOCOL)
         else
-            parse_locaion_update(message)
+            parse_location_update(message)
             if message == axis .. "_" .. target then
                 return true
             end
@@ -204,12 +204,12 @@ function force_location_update()
         if message == nil then
             return
         else
-            parse_locaion_update(message)
+            parse_location_update(message)
         end
     end
 end
 
-function parse_locaion_update(message)
+function parse_location_update(message)
     if message == nil then return end
 
     if message:find("primary_") then
