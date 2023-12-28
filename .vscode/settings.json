@@ -2,7 +2,8 @@
     "Lua.diagnostics.globals": [
         "redstone",
         "rednet",
-        "sleep"
+        "sleep",
+        "peripheral"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"

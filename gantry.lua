@@ -8,29 +8,116 @@ SIDE_GEARSHIFT = "top"
 SIDE_STICKER = "right"
 SIDE_HEAD_CLUTCH = "front"
 
-PISTON_DEBOUNCE = 0.5
+PISTON_DEBOUNCE = 0.65
 STICKER_DEBOUNCE = 0.20
 
 SIDE_MODEM = "bottom"
 PROTOCOL = "gantry"
+PROTOCOL_HEAD = "gantry_head"
 
 rednet.open(SIDE_MODEM)
 rednet.host(PROTOCOL, "gantry0")
 
-current_location = {}
+current_location = {
+    primary = nil,
+    secondary = nil,
+}
 
 function init()
+    print("Initializing...")
+
     for _, side in pairs(redstone.getSides()) do
-        redstone.setOutput(side, false)
+        -- Stop axis movement, reset everything else
+        local enable = side == SIDE_PRIMARY_AXIS or side == SIDE_SECONDARY_AXIS
+        redstone.setOutput(side, enable)
     end
 
-    lower_piston()
+    init_head_rednet()
 
-    print("Attempting primary axis initialization")
+    force_location_update()
+
+    print("Checking if payload is attached")
+    lower_piston()
+    init_check_head()
+
+    if not is_valid_location() then
+        print("Bad location, resetting")
+        reset_location()
+    end
+end
+
+function init_check_head(second_check)
+    local status = get_head_status()
+    if status:find("error") then
+        print("Error: head returned " .. status)
+        error()
+    elseif status == "none" and not second_check then
+        print("No payload, making sure sticker is disabled")
+        raise_piston()
+        lower_piston()
+        init_check_head(true)
+    elseif status == "none" and second_check then
+        print("Sticker clean")
+    elseif second_check then
+        print("Payload still attached, cycling again")
+        raise_piston()
+        toggle_sticker()
+        lower_piston()
+    else
+        print("Found " .. status .. " on head")
+        if not is_valid_location() then
+            print("Location bad, but have payload. Moving to 0 0.")
+            reset_location()
+            init_check_head(true)
+        else
+            print("Location good, unsticking.")
+            raise_piston()
+            toggle_sticker()
+            lower_piston()
+            init_check_head(true)
+        end
+    end
+end
+
+function is_valid_location()
+    return current_location.primary ~= nil and
+        current_location.secondary ~= nil
+end
+
+function init_head_rednet()
+    print("Connecting to gantry head")
+    head_id = rednet.lookup(PROTOCOL_HEAD)
+    local attempts = 1
+    local MAX_ATTEMPTS = 5
+    while head_id == nil do
+        attempts = attempts + 1
+        sleep(2)
+        if attempts > MAX_ATTEMPTS then
+            print("Error: gantry head not found")
+            error()
+        end
+        head_id = rednet.lookup(PROTOCOL_HEAD)
+    end
+end
+
+function get_head_status()
+    rednet.send(head_id, "get_head_status", PROTOCOL_HEAD)
+    for i = 0, 10, 1 do
+        local id, message = rednet.receive(PROTOCOL_HEAD, 1)
+        if message ~= nil then
+            return message
+        end
+    end
+    print("Error: head not responding to status request")
+    error()
+end
+
+function reset_location()
+    print("Moving primary axis to 0")
     move_backward()
     wait_location_update("primary", 0)
 
-    print("Attempting secondary axis initialization")
+    print("Moving secondary axis to 0")
     move_left()
     wait_location_update("secondary", 0)
 end
@@ -80,17 +167,36 @@ function wait_location_update(axis, target)
             print("No message within timeout, sending broadcast")
             rednet.broadcast("update_location", PROTOCOL)
         else
-            if message:find("primary_") then
-                current_location.primary = tonumber(message:sub(9))
-                print("primary at " .. current_location.primary)
-            elseif message:find("secondary_") then
-                current_location.secondary = tonumber(message:sub(11))
-                print("secondary at " .. current_location.secondary)
-            end
+            parse_locaion_update(message)
             if message == axis .. "_" .. target then
                 return true
             end
         end
+    end
+end
+
+function force_location_update()
+    print("Broadcasting to get current location")
+    rednet.broadcast("update_location", PROTOCOL)
+    while true do
+        local _id, message = rednet.receive(PROTOCOL, 5)
+        if message == nil then
+            return
+        else
+            parse_locaion_update(message)
+        end
+    end
+end
+
+function parse_locaion_update(message)
+    if message == nil then return end
+
+    if message:find("primary_") then
+        current_location.primary = tonumber(message:sub(9))
+        print("primary at " .. current_location.primary)
+    elseif message:find("secondary_") then
+        current_location.secondary = tonumber(message:sub(11))
+        print("secondary at " .. current_location.secondary)
     end
 end
 
@@ -159,12 +265,14 @@ end
 
 init()
 
--- transport_from_to(2, 0, 0, 2)
+-- transport_from_to(2, 0, 2, 1)
 -- sleep(2)
 -- transport_from_to(1, 1, 2, 2)
+transport_from_to(2, 0, 2, 0)
+-- transport_from_to(0, 0, 2, 2)
 -- move_to(2, 2)
 -- sleep(2)
-move_to(0, 2)
+-- move_to(0, 2)
 -- sleep(2)
 -- move_to(1, 1)
 
