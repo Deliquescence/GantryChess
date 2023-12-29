@@ -1,11 +1,11 @@
 -- clockwise input into gearshift
--- Primary: forward/back
-SIDE_PRIMARY_AXIS = "left"
--- Secondary: left/right
-SIDE_SECONDARY_AXIS = "back"
+SIDE_AXIS_CONTROL = "back"
+SIDE_THROTTLE = "left" -- high means double speed
 SIDE_STICKER = "right"
 SIDE_GEARSHIFT = "top"
 SIDE_HEAD_CLUTCH = "front"
+
+SECONDARY_AXIS_POWER_LEVEL = 2
 
 PISTON_DEBOUNCE = 0.8
 STICKER_DEBOUNCE = 0.20
@@ -30,7 +30,7 @@ function init()
 
     for _, side in pairs(redstone.getSides()) do
         -- Stop axis movement, reset everything else
-        local enable = side == SIDE_PRIMARY_AXIS or side == SIDE_SECONDARY_AXIS
+        local enable = side == SIDE_AXIS_CONTROL
         redstone.setOutput(side, enable)
     end
 
@@ -223,24 +223,22 @@ function parse_location_update(message)
 end
 
 function move_forward()
-    redstone.setOutput(SIDE_PRIMARY_AXIS, false)
+    redstone.setOutput(SIDE_AXIS_CONTROL, false)
     redstone.setOutput(SIDE_GEARSHIFT, false)
 end
 
 function move_backward()
-    redstone.setOutput(SIDE_PRIMARY_AXIS, false)
+    redstone.setOutput(SIDE_AXIS_CONTROL, false)
     redstone.setOutput(SIDE_GEARSHIFT, true)
 end
 
 function move_left()
-    redstone.setOutput(SIDE_PRIMARY_AXIS, true)
-    redstone.setOutput(SIDE_SECONDARY_AXIS, false)
+    redstone.setAnalogOutput(SIDE_AXIS_CONTROL, SECONDARY_AXIS_POWER_LEVEL - 1)
     redstone.setOutput(SIDE_GEARSHIFT, true)
 end
 
 function move_right()
-    redstone.setOutput(SIDE_PRIMARY_AXIS, true)
-    redstone.setOutput(SIDE_SECONDARY_AXIS, false)
+    redstone.setAnalogOutput(SIDE_AXIS_CONTROL, SECONDARY_AXIS_POWER_LEVEL - 1)
     redstone.setOutput(SIDE_GEARSHIFT, false)
 end
 
@@ -252,9 +250,9 @@ end
 function halt_axis(axis)
     -- print("HALT " .. axis)
     if axis == "primary" then
-        redstone.setOutput(SIDE_PRIMARY_AXIS, true)
+        redstone.setAnalogOutput(SIDE_AXIS_CONTROL, SECONDARY_AXIS_POWER_LEVEL - 1)
     elseif axis == "secondary" then
-        redstone.setOutput(SIDE_SECONDARY_AXIS, true)
+        redstone.setOutput(SIDE_AXIS_CONTROL, true)
     else
         print(axis .. " is not an axis")
         error()
