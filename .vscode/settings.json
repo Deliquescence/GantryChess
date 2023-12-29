@@ -4,7 +4,12 @@
         "rednet",
         "sleep",
         "peripheral",
-        "turtle"
+        "turtle",
+        "textutils",
+        "colors",
+        "paintutils",
+        "term",
+        "parallel"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"

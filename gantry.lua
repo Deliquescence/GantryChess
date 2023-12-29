@@ -285,9 +285,32 @@ function toggle_sticker()
     sleep(STICKER_DEBOUNCE)
 end
 
+function host_control_rpc()
+    print("Waiting for control commands")
+    while true do
+        local _id, message = rednet.receive(PROTOCOL_CONTROL)
+        if message == nil then
+            print("Exiting control listen loop")
+            return
+        end
+        print()
+        print(message)
+        local data = textutils.unserialize(message)
+        if data.command == "move_to" then
+            move_to(data.primary, data.secondary)
+        elseif data.command == "transport" then
+            local fp = data.from_primary
+            local fs = data.from_secondary
+            local tp = data.to_primary
+            local ts = data.to_secondary
+            transport_from_to(fp, fs, tp, ts)
+        end
+    end
+end
+
 init()
 
--- transport_from_to(2, 0, 2, 1)
+-- transport_from_to(1, 0, 0, 2)
 -- sleep(2)
 -- transport_from_to(1, 1, 2, 2)
 -- transport_from_to(0, 2, 1, 0)
@@ -297,6 +320,8 @@ init()
 -- move_to(0, 2)
 -- sleep(2)
 -- move_to(1, 1)
+
+host_control_rpc()
 
 return {
     move_forward = move_forward,

@@ -13,21 +13,21 @@ function check_and_notify()
 end
 
 function notify()
-    rednet.send(host_id, MESSAGE, PROTOCOL_LOCATION)
+    rednet.broadcast(MESSAGE, PROTOCOL_LOCATION)
 end
 
 function init_rednet()
     print("Initializing rednet")
     rednet.open(SIDE_MODEM)
-    host_id = rednet.lookup(PROTOCOL_CONTROL)
-    local attempts = 1
-    while host_id == nil do
-        print("Looking for host, attempt " .. attempts)
-        sleep(2)
-        host_id = rednet.lookup(PROTOCOL_CONTROL)
-        attempts = attempts + 1
-    end
-    print("Control host found")
+    -- host_id = rednet.lookup(PROTOCOL_CONTROL)
+    -- local attempts = 1
+    -- while host_id == nil do
+    --     print("Looking for host, attempt " .. attempts)
+    --     sleep(1)
+    --     host_id = rednet.lookup(PROTOCOL_CONTROL)
+    --     attempts = attempts + 1
+    -- end
+    -- print("Control host found")
 end
 
 function main()
@@ -44,7 +44,7 @@ function main()
             local sender = eventData[2]
             local message = eventData[3]
             local protocol = eventData[4]
-            if sender == host_id and protocol == PROTOCOL_LOCATION then
+            if message == "update_location" and protocol == PROTOCOL_LOCATION then
                 check_and_notify()
             end
         end
