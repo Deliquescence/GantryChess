@@ -58,7 +58,8 @@ function clean_write()
             local primary = GANTRY_N_PRIMARY_AXIS - j - 1
             local secondary = i
 
-            local parity = (i + j) % 2 == 0
+            -- make lower right light colored
+            local parity = (i + j) % 2 == (GANTRY_N_PRIMARY_AXIS + GANTRY_N_SECONDARY_AXIS) % 2
             local color = colors.gray
             if parity then color = colors.lightGray end
             if selection_from ~= nil and selection_from.gantry_primary == primary and selection_from.gantry_secondary == secondary then
