@@ -20,6 +20,11 @@ current_location = {
     primary = nil,
     secondary = nil,
 }
+moving_to = {
+    primary = nil,
+    secondary = nil,
+    axis = nil,
+}
 holding = nil
 
 function init()
@@ -159,11 +164,15 @@ end
 function move_to(primary, secondary)
     print()
     print("moving to " .. primary .. ", " .. secondary)
+    moving_to.primary = primary
+    moving_to.secondary = secondary
     move_axis("primary", primary)
     move_axis("secondary", secondary)
 end
 
 function move_axis(axis, to)
+    moving_to.axis = axis
+    redstone.setOutput(SIDE_THROTTLE, can_go_fast())
     if to < current_location[axis] then
         if axis == "primary" then
             move_backward()
@@ -179,6 +188,7 @@ function move_axis(axis, to)
         end
         wait_location_update(axis, to)
     end
+    moving_to.axis = nil
     halt_axis(axis)
 end
 
@@ -190,11 +200,20 @@ function wait_location_update(axis, target)
             rednet.broadcast("update_location", PROTOCOL_LOCATION)
         else
             parse_location_update(message)
+            redstone.setOutput(SIDE_THROTTLE, can_go_fast())
             if message == axis .. "_" .. target then
+                moving_to[axis] = nil
                 return true
             end
         end
     end
+end
+
+function can_go_fast()
+    if moving_to.axis == nil or current_location.primary == nil or current_location.secondary == nil then
+        return false
+    end
+    return math.abs(moving_to[moving_to.axis] - current_location[moving_to.axis]) > 1
 end
 
 function force_location_update()
