@@ -15,6 +15,7 @@ SIDE_MODEM = "bottom"
 PROTOCOL_LOCATION = "gantry_location"
 PROTOCOL_HEAD = "gantry_head"
 PROTOCOL_CONTROL = "gantry_control"
+PROTOCOL_CONTROL_ACK = "gantry_control_ack"
 
 current_location = {
     primary = nil,
@@ -103,8 +104,8 @@ function init_head_rednet()
 end
 
 function get_head_status()
-    rednet.send(head_id, "get_head_status", PROTOCOL_HEAD)
     for i = 0, 10, 1 do
+        rednet.send(head_id, "get_head_status", PROTOCOL_HEAD)
         local id, message = rednet.receive(PROTOCOL_HEAD, 1)
         if message ~= nil then
             return message
@@ -298,12 +299,10 @@ function host_control_rpc()
         local data = textutils.unserialize(message)
         if data.command == "move_to" then
             move_to(data.primary, data.secondary)
+            rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         elseif data.command == "transport" then
-            local fp = data.from_primary
-            local fs = data.from_secondary
-            local tp = data.to_primary
-            local ts = data.to_secondary
-            transport_from_to(fp, fs, tp, ts)
+            transport_from_to(data.fp, data.fs, data.tp, data.ts)
+            rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         end
     end
 end

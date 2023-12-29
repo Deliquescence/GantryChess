@@ -2,18 +2,29 @@
 SIDE_MODEM = "left"
 SIDE_MONITOR = "right"
 PROTOCOL_CONTROL = "gantry_control"
+PROTOCOL_CONTROL_ACK = "gantry_control_ack"
 PROTOCOL_LOCATION = "gantry_location"
-
 GANTRY_N_PRIMARY_AXIS = 3
 GANTRY_N_SECONDARY_AXIS = 3
+PIXELS_BOTTOM_ROW = 5
+MODES = {
+    move = "move_to",
+    transport = "transport"
+}
+
 monitor = peripheral.wrap(SIDE_MONITOR)
-mode = "move_to"
 computer_term = term.current()
 
+waiting_command = false
+mode = MODES.move
 current_location = {
     primary = nil,
     secondary = nil,
 }
+squares = {}
+selection_to = nil
+selection_from = nil
+mode_change_box = nil
 
 function init_rednet()
     print("Initializing rednet")
@@ -29,8 +40,6 @@ function init_rednet()
     print("Control host found")
 end
 
-squares = {}
-selection = nil
 function clean_write()
     squares = {}
     term.redirect(monitor)
@@ -40,7 +49,7 @@ function clean_write()
 
     local max_x, max_y = monitor.getSize()
     local usable_x = max_x
-    local usable_y = max_y - 3
+    local usable_y = max_y - PIXELS_BOTTOM_ROW
     local width = math.floor(usable_x / GANTRY_N_SECONDARY_AXIS)
     local height = math.floor(usable_y / GANTRY_N_PRIMARY_AXIS)
     for i = 0, GANTRY_N_SECONDARY_AXIS - 1, 1 do
@@ -54,38 +63,71 @@ function clean_write()
             if parity then color = colors.lightGray end
             if current_location.primary == primary and current_location.secondary == secondary then
                 color = colors.green
+            elseif selection_from ~= nil and selection_from.gantry_primary == primary and selection_from.gantry_secondary == secondary then
+                color = colors.purple
+            elseif selection_to ~= nil and selection_to.gantry_primary == primary and selection_to.gantry_secondary == secondary then
+                color = colors.blue
             end
 
             local x = i * width
             local y = j * height
-            local square = {
-                startX = x + 1,
-                startY = y + 1,
-                endX = x + width - 1,
-                endY = y + height - 1,
-                gantry_primary = primary,
-                gantry_secondary = secondary,
-                bound_check = square_click_bound_check,
-            }
+            local square = drawBox(
+                x + 1,
+                y + 1,
+                x + width - 1,
+                y + height - 1,
+                color)
+            square.gantry_primary = primary
+            square.gantry_secondary = secondary
             table.insert(squares, square)
-            paintutils.drawBox(square.startX, square.startY, square.endX, square.endY, color)
         end
     end
 
-    paintutils.drawBox(1, max_y - 2, 15, max_y, colors.green)
+    term.setBackgroundColor(colors.black)
+    term.setTextColor(colors.white)
+    term.setCursorPos(1, max_y - 3)
+    if waiting_command then
+        term.write("Waiting for previous command to finish...")
+    else
+        term.clearLine()
+    end
+
+    mode_change_box = drawBox(1, max_y - 2, 17, max_y, colors.brown, true)
+    term.setCursorPos(2, max_y - 1)
+    term.write("Mode: " .. mode)
 end
 
-function square_click_bound_check(square, x, y)
-    return x >= square.startX and x <= square.endX and y >= square.startY and y <= square.endY
+function drawBox(startX, startY, endX, endY, color, filled)
+    local box = {
+        startX = startX,
+        startY = startY,
+        endX = endX,
+        endY = endY,
+        color = color,
+        bound_check = gui_click_bound_check,
+    }
+    if filled then
+        paintutils.drawFilledBox(box.startX, box.startY, box.endX, box.endY, color)
+    else
+        paintutils.drawBox(box.startX, box.startY, box.endX, box.endY, color)
+    end
+    return box
 end
 
-function location_update_loop()
+function gui_click_bound_check(box, x, y)
+    return x >= box.startX and x <= box.endX and y >= box.startY and y <= box.endY
+end
+
+function rednet_receive_loop()
     while true do
-        local _id, message = rednet.receive(PROTOCOL_LOCATION)
+        local _id, message, protocol = rednet.receive()
         if message == nil then
             return
-        else
+        elseif protocol == PROTOCOL_LOCATION then
             parse_location_update(message)
+            clean_write()
+        elseif protocol == PROTOCOL_CONTROL_ACK then
+            waiting_command = false
             clean_write()
         end
     end
@@ -132,21 +174,53 @@ function gui_loop()
         term.redirect(computer_term)
         local _event, _side, x, y = os.pullEvent("monitor_touch")
 
-        for _, square in ipairs(squares) do
-            if square:bound_check(x, y) then
-                selection = square
-                local command = {
-                    command = "move_to",
-                    primary = square.gantry_primary,
-                    secondary = square.gantry_secondary,
-                }
-                local data = textutils.serialize(command)
-                rednet.send(host_id, data, PROTOCOL_CONTROL)
+        if mode_change_box:bound_check(x, y) then
+            if mode == MODES.move then
+                mode = MODES.transport
+            else
+                mode = MODES.move
             end
         end
-        coroutine.yield()
+        local touched_square = nil
+        for _, square in ipairs(squares) do
+            if square:bound_check(x, y) then
+                touched_square = square
+            end
+        end
+        if touched_square ~= nil and not waiting_command then
+            if mode == MODES.move then
+                selection_from = nil
+                selection_to = touched_square
+                local command = {
+                    command = mode,
+                    primary = touched_square.gantry_primary,
+                    secondary = touched_square.gantry_secondary,
+                }
+                send_command(command)
+            elseif mode == MODES.transport then
+                if selection_from == nil then
+                    selection_from = touched_square
+                else
+                    selection_to = touched_square
+                    local command = {
+                        command = mode,
+                        fp = selection_from.gantry_primary,
+                        fs = selection_from.gantry_secondary,
+                        tp = selection_to.gantry_primary,
+                        ts = selection_to.gantry_secondary,
+                    }
+                    send_command(command)
+                end
+            end
+        end
     end
 end
 
+function send_command(command)
+    local data = textutils.serialize(command)
+    rednet.send(host_id, data, PROTOCOL_CONTROL)
+    waiting_command = true
+end
+
 init_rednet()
-parallel.waitForAll(gui_loop, location_update_loop, request_location_update)
+parallel.waitForAll(gui_loop, rednet_receive_loop, request_location_update)
