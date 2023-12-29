@@ -61,12 +61,12 @@ function clean_write()
             local parity = (i + j) % 2 == 0
             local color = colors.gray
             if parity then color = colors.lightGray end
-            if current_location.primary == primary and current_location.secondary == secondary then
-                color = colors.green
-            elseif selection_from ~= nil and selection_from.gantry_primary == primary and selection_from.gantry_secondary == secondary then
+            if selection_from ~= nil and selection_from.gantry_primary == primary and selection_from.gantry_secondary == secondary then
                 color = colors.purple
             elseif selection_to ~= nil and selection_to.gantry_primary == primary and selection_to.gantry_secondary == secondary then
                 color = colors.blue
+            elseif current_location.primary == primary and current_location.secondary == secondary then
+                color = colors.green
             end
 
             local x = i * width
@@ -128,6 +128,8 @@ function rednet_receive_loop()
             clean_write()
         elseif protocol == PROTOCOL_CONTROL_ACK then
             waiting_command = false
+            selection_from = nil
+            selection_to = nil
             clean_write()
         end
     end
