@@ -23,6 +23,7 @@ local gui = {
         primary = nil,
         secondary = nil,
     },
+    recent_command_info = nil,
     squares = {},
     selection_to = nil,
     selection_from = nil,
@@ -92,6 +93,8 @@ function gui:clean_write()
     term.setCursorPos(1, max_y - 3)
     if waiting_command then
         term.write("Waiting for previous command to finish...")
+    elseif self.recent_command_info ~= nil then
+        term.write(self.recent_command_info)
     else
         term.clearLine()
     end
@@ -132,16 +135,15 @@ function gui:rednet_receive_loop()
             gui:clean_write()
         elseif protocol == PROTOCOL_CONTROL_ACK then
             local data = textutils.unserialize(message)
-            if self.mode == MODES.inspect and data.command == MODES.move then
-                local command = {
-                    command = self.mode,
-                }
-                self:send_command(command)
+            if data.command == MODES.inspect or data.command == "read_contents" then
+                self.recent_command_info = string.format("Spot %s %s has %s",
+                    data.primary, data.secondary, data.contents)
             else
-                waiting_command = false
-                selection_from = nil
-                selection_to = nil
+                self.recent_command_info = nil
             end
+            waiting_command = false
+            selection_from = nil
+            selection_to = nil
             gui:clean_write()
         end
     end
@@ -192,12 +194,14 @@ function gui:gui_loop()
             local at_touched_square = self.current_location.primary == touched_square.gantry_primary
                 and self.current_location.secondary == touched_square.gantry_secondary
 
-            if self.mode == MODES.inspect and at_touched_square then
+            if self.mode == MODES.inspect then
                 local command = {
                     command = self.mode,
+                    primary = touched_square.gantry_primary,
+                    secondary = touched_square.gantry_secondary,
                 }
                 self:send_command(command)
-            elseif self.mode == MODES.move or (self.mode == MODES.inspect and not at_touched_square) then
+            elseif self.mode == MODES.move then
                 selection_from = nil
                 selection_to = touched_square
                 local command = {

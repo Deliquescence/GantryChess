@@ -190,7 +190,12 @@ function control:host_control_rpc()
             self:transport_from_to(data.fp, data.fs, data.tp, data.ts)
             rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         elseif data.command == "inspect" then
+            if data.primary ~= nil and data.secondary ~= nil then
+                firmware:move_to(data.primary, data.secondary)
+            end
             data.contents = self:inspect_spot()
+            data.primary = firmware.current_location.primary
+            data.secondary = firmware.current_location.secondary
             rednet.broadcast(textutils.serialize(data), PROTOCOL_CONTROL_ACK)
         elseif data.command == "read_contents" then
             data.contents = self:read_spot_contents(data.primary, data.secondary)
