@@ -10,13 +10,17 @@ SECONDARY_AXIS_POWER_LEVEL = 2
 PISTON_DEBOUNCE = 0.8
 STICKER_DEBOUNCE = 0.20
 
-SIDE_MODEM = "bottom"
+local SIDE_MODEM = "bottom"
 PROTOCOL_CONTROL = "gantry_control"
 PROTOCOL_CONTROL_ACK = "gantry_control_ack"
 
 local firmware = require("gantry_firmware")
 
-function init()
+local control = {
+    holding = nil,
+}
+
+function control:init()
     print("Initializing...")
 
     rednet.open(SIDE_MODEM)
@@ -32,7 +36,7 @@ function init()
 
     print("Checking if payload is attached")
     firmware:lower_piston()
-    init_check_head()
+    self:init_check_head()
 
     if not firmware:at_valid_location() then
         print("Bad location, resetting")
@@ -40,7 +44,7 @@ function init()
     end
 end
 
-function init_check_head(second_check)
+function control:init_check_head(second_check)
     local status = firmware:get_head_status()
     if status:find("error") then
         print("Error: head returned " .. status)
@@ -49,7 +53,7 @@ function init_check_head(second_check)
         print("No payload, making sure sticker is disabled")
         firmware:raise_piston()
         firmware:lower_piston()
-        init_check_head(true)
+        self:init_check_head(true)
     elseif status == "none" and second_check then
         print("Sticker clean")
     elseif second_check then
@@ -62,26 +66,26 @@ function init_check_head(second_check)
         if not firmware:at_valid_location() then
             print("Location bad, but have payload. Moving to 0 0.")
             firmware:reset_location()
-            init_check_head(true)
+            self:init_check_head(true)
         else
             print("Location good, unsticking.")
             firmware:raise_piston()
             firmware:toggle_sticker()
             firmware:lower_piston()
-            init_check_head(true)
+            self:init_check_head(true)
         end
     end
 end
 
-function transport_from_to(fp, fs, tp, ts)
+function control:transport_from_to(fp, fs, tp, ts)
     firmware:move_to(fp, fs)
-    grab()
+    self:grab()
 
     firmware:move_to(tp, ts)
-    release()
+    self:release()
 end
 
-function grab()
+function control:grab()
     firmware:raise_piston()
     local status = firmware:get_head_status()
     if status:find("error") then
@@ -98,14 +102,14 @@ function grab()
     firmware:lower_piston()
 end
 
-function release()
+function control:release()
     firmware:raise_piston()
     firmware:toggle_sticker()
     firmware:lower_piston()
     -- holding = nil --TODO
 end
 
-function host_control_rpc()
+function control:host_control_rpc()
     print("Waiting for control commands")
     while true do
         local _id, message = rednet.receive(PROTOCOL_CONTROL)
@@ -120,12 +124,11 @@ function host_control_rpc()
             firmware:move_to(data.primary, data.secondary)
             rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         elseif data.command == "transport" then
-            transport_from_to(data.fp, data.fs, data.tp, data.ts)
+            self:transport_from_to(data.fp, data.fs, data.tp, data.ts)
             rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         end
     end
 end
 
-init()
-
-host_control_rpc()
+control:init()
+control:host_control_rpc()
