@@ -129,7 +129,7 @@ function control:release()
     firmware:raise_piston()
     firmware:toggle_sticker()
     firmware:lower_piston()
-    self:write_spot_contents(self.holding)
+    self:write_spot_contents(self.holding or "none")
     self.holding = nil
 end
 
@@ -189,7 +189,7 @@ function control:host_control_rpc()
         elseif data.command == "transport" then
             local destination_contents = self:read_spot_contents(data.tp, data.ts)
             if destination_contents ~= "none" and destination_contents ~= "unknown" then
-                data.error = string.format("Cannot transport to %s %s, spot occupied by %s",
+                data.error = string.format("Cannot transport to %s %s, occupied by %s",
                     data.tp, data.ts, destination_contents)
                 rednet.broadcast(textutils.serialize(data), PROTOCOL_CONTROL_ACK)
             else

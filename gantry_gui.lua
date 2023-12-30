@@ -31,8 +31,9 @@ local gui = {
 }
 
 local function print_term(str)
-    term.redirect(computer_term)
+    local prev = term.redirect(computer_term)
     print(str)
+    term.redirect(prev)
 end
 
 function gui:init_rednet()
@@ -71,13 +72,6 @@ function gui:clean_write()
             local parity = (i + j) % 2 == (GANTRY_N_PRIMARY_AXIS + GANTRY_N_SECONDARY_AXIS) % 2
             local color = colors.gray
             if parity then color = colors.lightGray end
-            if selection_from ~= nil and selection_from.gantry_primary == primary and selection_from.gantry_secondary == secondary then
-                color = colors.purple
-            elseif selection_to ~= nil and selection_to.gantry_primary == primary and selection_to.gantry_secondary == secondary then
-                color = colors.blue
-            elseif self.current_location.primary == primary and self.current_location.secondary == secondary then
-                color = colors.green
-            end
 
             local x = i * width
             local y = j * height
@@ -86,17 +80,37 @@ function gui:clean_write()
                 y + 1,
                 x + width - 1,
                 y + height - 1,
-                color)
+                color,
+                true)
             square.gantry_primary = primary
             square.gantry_secondary = secondary
             table.insert(squares, square)
+
+            local at_square = gui:current_location_at(primary, secondary)
+            if at_square and self.waiting_command then
+                color = colors.green
+            elseif self.selection_from ~= nil and self.selection_from.gantry_primary == primary and self.selection_from.gantry_secondary == secondary then
+                color = colors.purple
+            elseif self.selection_to ~= nil and self.selection_to.gantry_primary == primary and self.selection_to.gantry_secondary == secondary then
+                color = colors.blue
+            elseif at_square then
+                color = colors.green
+            end
+
+            self:drawBox(
+                x + 1,
+                y + 1,
+                x + width - 1,
+                y + height - 1,
+                color,
+                false)
         end
     end
 
     term.setBackgroundColor(colors.black)
     term.setTextColor(colors.white)
     term.setCursorPos(1, max_y - 3)
-    if waiting_command then
+    if self.waiting_command then
         term.write("Waiting for previous command to finish...")
     elseif self.recent_command_info ~= nil then
         term.write(self.recent_command_info)
@@ -148,10 +162,10 @@ function gui:rednet_receive_loop()
             else
                 self.recent_command_info = nil
             end
-            waiting_command = false
-            selection_from = nil
-            selection_to = nil
-            gui:clean_write()
+            self.waiting_command = false
+            self.selection_from = nil
+            self.selection_to = nil
+            self:clean_write()
         end
     end
 end
@@ -171,6 +185,10 @@ function gui:parse_location_update(message)
         self.current_location.secondary = tonumber(message:sub(11))
         -- print("secondary at " .. current_location.secondary)
     end
+end
+
+function gui:current_location_at(primary, secondary)
+    return self.current_location.primary == primary and self.current_location.secondary == secondary
 end
 
 local function request_location_update()
@@ -196,11 +214,13 @@ function gui:gui_loop()
                 touched_square = square
             end
         end
-        if touched_square ~= nil and not waiting_command then
-            local at_touched_square = self.current_location.primary == touched_square.gantry_primary
-                and self.current_location.secondary == touched_square.gantry_secondary
+        if touched_square ~= nil and not self.waiting_command then
+            local at_touched_square = self:current_location_at(touched_square.gantry_primary,
+                touched_square.gantry_secondary)
 
             if self.mode == MODES.inspect then
+                self.selection_from = nil
+                self.selection_to = touched_square
                 local command = {
                     command = self.mode,
                     primary = touched_square.gantry_primary,
@@ -208,8 +228,8 @@ function gui:gui_loop()
                 }
                 self:send_command(command)
             elseif self.mode == MODES.move then
-                selection_from = nil
-                selection_to = touched_square
+                self.selection_from = nil
+                self.selection_to = touched_square
                 local command = {
                     command = MODES.move,
                     primary = touched_square.gantry_primary,
@@ -217,16 +237,16 @@ function gui:gui_loop()
                 }
                 self:send_command(command)
             elseif self.mode == MODES.transport then
-                if selection_from == nil then
-                    selection_from = touched_square
+                if self.selection_from == nil then
+                    self.selection_from = touched_square
                 else
-                    selection_to = touched_square
+                    self.selection_to = touched_square
                     local command = {
                         command = self.mode,
-                        fp = selection_from.gantry_primary,
-                        fs = selection_from.gantry_secondary,
-                        tp = selection_to.gantry_primary,
-                        ts = selection_to.gantry_secondary,
+                        fp = self.selection_from.gantry_primary,
+                        fs = self.selection_from.gantry_secondary,
+                        tp = self.selection_to.gantry_primary,
+                        ts = self.selection_to.gantry_secondary,
                     }
                     self:send_command(command)
                 end
@@ -238,7 +258,7 @@ end
 function gui:send_command(command)
     local data = textutils.serialize(command)
     rednet.send(self.host_id, data, PROTOCOL_CONTROL)
-    waiting_command = true
+    self.waiting_command = true
 end
 
 local function gui_loop()
