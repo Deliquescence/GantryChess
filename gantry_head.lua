@@ -1,5 +1,5 @@
 PROTOCOL_HEAD = "gantry_head"
-PROTOCOL_CONTROL = "gantry_control"
+-- PROTOCOL_CONTROL = "gantry_control"
 SIDE_MODEM = "right"
 INFO_SLOT = 1
 
@@ -12,19 +12,19 @@ end
 function init_rednet()
     print("Initializing rednet")
     rednet.open(SIDE_MODEM)
-    host_id = rednet.lookup(PROTOCOL_CONTROL)
-    local attempts = 1
-    while host_id == nil do
-        print("Looking for host, attempt " .. attempts)
-        sleep(2)
-        host_id = rednet.lookup(PROTOCOL_CONTROL)
-        attempts = attempts + 1
-    end
-    print("Control host found")
+    -- host_id = rednet.lookup(PROTOCOL_CONTROL)
+    -- local attempts = 1
+    -- while host_id == nil do
+    --     print("Looking for host, attempt " .. attempts)
+    --     sleep(2)
+    --     host_id = rednet.lookup(PROTOCOL_CONTROL)
+    --     attempts = attempts + 1
+    -- end
+    -- print("Control host found")
 end
 
 function send_status()
-    rednet.send(host_id, get_status(), PROTOCOL_HEAD)
+    rednet.broadcast(get_status(), PROTOCOL_HEAD)
 end
 
 function get_status()
