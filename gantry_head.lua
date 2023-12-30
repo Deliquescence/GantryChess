@@ -29,6 +29,7 @@ end
 
 function get_status()
     if not turtle.detectUp() then
+        print("none")
         return "none"
     end
     if not peripheral.isPresent("top") then
