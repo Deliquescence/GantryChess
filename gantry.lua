@@ -77,7 +77,28 @@ function control:init_check_head(second_check)
     end
 end
 
-function control:transport_from_to(fp, fs, tp, ts)
+function control:transport_from_to(fp, fs, tp, ts, paranoid)
+    if paranoid == nil then paranoid = true end
+
+    local destination_contents = self:read_spot_contents(tp, ts)
+    if destination_contents == "unknown" then
+        if paranoid then
+            print("Don't know if destination is occupied, going to check")
+            firmware:move_to(tp, ts)
+            control:inspect_spot()
+            self:transport_from_to(fp, fs, tp, ts, false)
+        else
+            self:transport_from_to_unchecked(fp, fs, tp, ts)
+        end
+    elseif destination_contents == "none" then
+        self:transport_from_to_unchecked(fp, fs, tp, ts)
+    else
+        print("Destination is already occupied by " .. destination_contents .. ", cannot transport")
+        error()
+    end
+end
+
+function control:transport_from_to_unchecked(fp, fs, tp, ts)
     firmware:move_to(fp, fs)
     self:grab()
 
@@ -129,9 +150,26 @@ function control:write_spot_contents(contents, primary, secondary)
     if primary == nil then primary = firmware.current_location.primary end
     if secondary == nil then secondary = firmware.current_location.secondary end
 
-    local file = fs.open("/grid_state/" .. primary .. "/" .. secondary, "w")
+    local path = self:get_state_file_path(primary, secondary)
+    local file = fs.open(path, "w")
     file.write(contents)
     file.close()
+end
+
+function control:read_spot_contents(primary, secondary)
+    local path = self:get_state_file_path(primary, secondary)
+    if fs.exists(path) then
+        local file = fs.open(path, "r")
+        local contents = file.readAll()
+        file.close()
+        return contents
+    else
+        return "unknown"
+    end
+end
+
+function control:get_state_file_path(primary, secondary)
+    return "/grid_state/" .. primary .. "/" .. secondary
 end
 
 function control:host_control_rpc()
@@ -152,8 +190,11 @@ function control:host_control_rpc()
             self:transport_from_to(data.fp, data.fs, data.tp, data.ts)
             rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         elseif data.command == "inspect" then
-            self:inspect_spot()
-            rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
+            data.contents = self:inspect_spot()
+            rednet.broadcast(textutils.serialize(data), PROTOCOL_CONTROL_ACK)
+        elseif data.command == "read_contents" then
+            data.contents = self:read_spot_contents(data.primary, data.secondary)
+            rednet.broadcast(textutils.serialize(data), PROTOCOL_CONTROL_ACK)
         end
     end
 end
