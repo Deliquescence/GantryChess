@@ -151,20 +151,12 @@ function firmware:move_right()
     redstone.setOutput(SIDE_GEARSHIFT, false)
 end
 
-function firmware:halt_movement()
-    self:halt_axis("primary")
-    self:halt_axis("secondary")
-end
-
 function firmware:halt_axis(axis)
     -- print("HALT " .. axis)
     if axis == "primary" then
         redstone.setAnalogOutput(SIDE_AXIS_CONTROL, SECONDARY_AXIS_POWER_LEVEL - 1)
-    elseif axis == "secondary" then
-        redstone.setOutput(SIDE_AXIS_CONTROL, true)
     else
-        print(axis .. " is not an axis")
-        error()
+        redstone.setOutput(SIDE_AXIS_CONTROL, true)
     end
 end
 
