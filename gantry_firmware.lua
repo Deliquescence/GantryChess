@@ -105,7 +105,7 @@ function firmware:wait_for_movement(axis, target)
 end
 
 function firmware:request_location_update(timeout)
-    if not timeout then timeout = 5 end
+    if timeout == nil then timeout = 5 end
 
     print("Broadcasting to get current location")
     rednet.broadcast("update_location", PROTOCOL_LOCATION)

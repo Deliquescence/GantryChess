@@ -94,19 +94,44 @@ function control:grab()
         error()
     elseif status == "none" then
         print("Warning: grabbing nothing")
+        self.holding = nil
     else
         print("Grabbing " .. status)
-        holding = status
+        self.holding = status
     end
     firmware:toggle_sticker()
     firmware:lower_piston()
+    self:write_spot_contents("none")
 end
 
 function control:release()
     firmware:raise_piston()
     firmware:toggle_sticker()
     firmware:lower_piston()
-    -- holding = nil --TODO
+    self:write_spot_contents(self.holding)
+    self.holding = nil
+end
+
+function control:inspect_spot()
+    firmware:raise_piston()
+    local status = firmware:get_head_status()
+
+    print(string.format("Found %s at %s %s", status,
+        firmware.current_location.primary,
+        firmware.current_location.secondary))
+    firmware:lower_piston()
+    self:write_spot_contents(status)
+
+    return status
+end
+
+function control:write_spot_contents(contents, primary, secondary)
+    if primary == nil then primary = firmware.current_location.primary end
+    if secondary == nil then secondary = firmware.current_location.secondary end
+
+    local file = fs.open("/grid_state/" .. primary .. "/" .. secondary, "w")
+    file.write(contents)
+    file.close()
 end
 
 function control:host_control_rpc()
@@ -125,6 +150,9 @@ function control:host_control_rpc()
             rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         elseif data.command == "transport" then
             self:transport_from_to(data.fp, data.fs, data.tp, data.ts)
+            rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
+        elseif data.command == "inspect" then
+            self:inspect_spot()
             rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         end
     end

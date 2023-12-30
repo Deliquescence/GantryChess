@@ -9,7 +9,8 @@ GANTRY_N_SECONDARY_AXIS = 5
 local PIXELS_BOTTOM_ROW = 5
 local MODES = {
     move = "move_to",
-    transport = "transport"
+    transport = "transport",
+    inspect = "inspect",
 }
 
 local gui = {
@@ -17,7 +18,7 @@ local gui = {
     computer_term = term.current(),
 
     waiting_command = false,
-    mode = MODES.move,
+    mode = MODES.inspect,
     current_location = {
         primary = nil,
         secondary = nil,
@@ -130,9 +131,17 @@ function gui:rednet_receive_loop()
             gui:parse_location_update(message)
             gui:clean_write()
         elseif protocol == PROTOCOL_CONTROL_ACK then
-            waiting_command = false
-            selection_from = nil
-            selection_to = nil
+            local data = textutils.unserialize(message)
+            if self.mode == MODES.inspect and data.command == MODES.move then
+                local command = {
+                    command = self.mode,
+                }
+                self:send_command(command)
+            else
+                waiting_command = false
+                selection_from = nil
+                selection_to = nil
+            end
             gui:clean_write()
         end
     end
@@ -167,10 +176,10 @@ function gui:gui_loop()
         local _event, _side, x, y = os.pullEvent("monitor_touch")
 
         if mode_change_box:bound_check(x, y) then
-            if self.mode == MODES.move then
+            if self.mode == MODES.inspect then
                 self.mode = MODES.transport
             else
-                self.mode = MODES.move
+                self.mode = MODES.inspect
             end
         end
         local touched_square = nil
@@ -180,11 +189,19 @@ function gui:gui_loop()
             end
         end
         if touched_square ~= nil and not waiting_command then
-            if self.mode == MODES.move then
+            local at_touched_square = self.current_location.primary == touched_square.gantry_primary
+                and self.current_location.secondary == touched_square.gantry_secondary
+
+            if self.mode == MODES.inspect and at_touched_square then
+                local command = {
+                    command = self.mode,
+                }
+                self:send_command(command)
+            elseif self.mode == MODES.move or (self.mode == MODES.inspect and not at_touched_square) then
                 selection_from = nil
                 selection_to = touched_square
                 local command = {
-                    command = self.mode,
+                    command = MODES.move,
                     primary = touched_square.gantry_primary,
                     secondary = touched_square.gantry_secondary,
                 }

@@ -9,7 +9,8 @@
         "colors",
         "paintutils",
         "term",
-        "parallel"
+        "parallel",
+        "fs"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"
