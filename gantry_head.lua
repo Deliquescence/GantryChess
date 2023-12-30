@@ -1,15 +1,11 @@
 PROTOCOL_HEAD = "gantry_head"
 -- PROTOCOL_CONTROL = "gantry_control"
 SIDE_MODEM = "right"
-INFO_SLOT = 1
+local INFO_SLOT = 1
 
 rednet.host(PROTOCOL_HEAD, "gantry0_head")
 
-function init()
-    init_rednet()
-end
-
-function init_rednet()
+local function init_rednet()
     print("Initializing rednet")
     rednet.open(SIDE_MODEM)
     -- host_id = rednet.lookup(PROTOCOL_CONTROL)
@@ -23,11 +19,11 @@ function init_rednet()
     -- print("Control host found")
 end
 
-function send_status()
-    rednet.broadcast(get_status(), PROTOCOL_HEAD)
+local function init()
+    init_rednet()
 end
 
-function get_status()
+local function get_status()
     if not turtle.detectUp() then
         print("none")
         return "none"
@@ -54,7 +50,11 @@ function get_status()
     return status
 end
 
-function main_loop()
+local function send_status()
+    rednet.broadcast(get_status(), PROTOCOL_HEAD)
+end
+
+local function main_loop()
     print("Handling status updates")
     while true do
         local _id, message = rednet.receive(PROTOCOL_HEAD)

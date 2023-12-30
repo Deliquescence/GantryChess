@@ -1,22 +1,24 @@
 ---@diagnostic disable: undefined-field
-MESSAGE = require("gantry_client_config")
-SIDE_REDSTONE = "back"
-SIDE_MODEM = "right"
+local MESSAGE = require("gantry_client_config")
+local SIDE_REDSTONE = "back"
+local SIDE_MODEM = "right"
 PROTOCOL_LOCATION = "gantry_location"
 PROTOCOL_CONTROL = "gantry_control"
-MAX_ATTEMPTS = 20
+local MAX_ATTEMPTS = 20
 
-function check_and_notify()
+local client = {}
+
+function client:check_and_notify()
     if redstone.getInput(SIDE_REDSTONE) then
-        notify()
+        self:notify()
     end
 end
 
-function notify()
+function client:notify()
     rednet.broadcast(MESSAGE, PROTOCOL_LOCATION)
 end
 
-function init_rednet()
+function client:init_rednet()
     print("Initializing rednet")
     rednet.open(SIDE_MODEM)
     -- host_id = rednet.lookup(PROTOCOL_CONTROL)
@@ -30,22 +32,22 @@ function init_rednet()
     -- print("Control host found")
 end
 
-function main()
+local function main()
     print("This is " .. MESSAGE)
-    init_rednet()
+    client:init_rednet()
 
     while true do
         local eventData = { os.pullEvent() }
         local event = eventData[1]
 
         if event == "redstone" then
-            check_and_notify()
+            client:check_and_notify()
         elseif event == "rednet_message" then
             local sender = eventData[2]
             local message = eventData[3]
             local protocol = eventData[4]
             if message == "update_location" and protocol == PROTOCOL_LOCATION then
-                check_and_notify()
+                client:check_and_notify()
             end
         end
     end
