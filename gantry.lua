@@ -16,16 +16,16 @@ PROTOCOL_HEAD = "gantry_head"
 PROTOCOL_CONTROL = "gantry_control"
 PROTOCOL_CONTROL_ACK = "gantry_control_ack"
 
-current_location = {
+local current_location = {
     primary = nil,
     secondary = nil,
 }
-moving_to = {
+local moving_to = {
     primary = nil,
     secondary = nil,
     axis = nil,
 }
-holding = nil
+local holding = nil
 
 function init()
     print("Initializing...")
@@ -200,13 +200,18 @@ function wait_location_update(axis, target)
             rednet.broadcast("update_location", PROTOCOL_LOCATION)
         else
             parse_location_update(message)
-            redstone.setOutput(SIDE_THROTTLE, can_go_fast())
+            set_high_speed(can_go_fast())
             if message == axis .. "_" .. target then
                 moving_to[axis] = nil
                 return true
             end
         end
     end
+end
+
+function set_high_speed(enable)
+    if not enable then enable = true end
+    redstone.setOutput(SIDE_THROTTLE, enable)
 end
 
 function can_go_fast()
@@ -279,6 +284,7 @@ function halt_axis(axis)
 end
 
 function raise_piston()
+    set_high_speed(true)
     redstone.setOutput(SIDE_GEARSHIFT, true)
     redstone.setOutput(SIDE_HEAD_CLUTCH, true)
     sleep(PISTON_DEBOUNCE)
@@ -287,6 +293,7 @@ function raise_piston()
 end
 
 function lower_piston()
+    set_high_speed(true)
     redstone.setOutput(SIDE_GEARSHIFT, false)
     redstone.setOutput(SIDE_HEAD_CLUTCH, true)
     sleep(PISTON_DEBOUNCE)
