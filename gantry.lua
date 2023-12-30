@@ -187,8 +187,15 @@ function control:host_control_rpc()
             firmware:move_to(data.primary, data.secondary)
             rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
         elseif data.command == "transport" then
-            self:transport_from_to(data.fp, data.fs, data.tp, data.ts)
-            rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
+            local destination_contents = self:read_spot_contents(data.tp, data.ts)
+            if destination_contents ~= "none" and destination_contents ~= "unknown" then
+                data.error = string.format("Cannot transport to %s %s, spot occupied by %s",
+                    data.tp, data.ts, destination_contents)
+                rednet.broadcast(textutils.serialize(data), PROTOCOL_CONTROL_ACK)
+            else
+                self:transport_from_to(data.fp, data.fs, data.tp, data.ts)
+                rednet.broadcast(message, PROTOCOL_CONTROL_ACK)
+            end
         elseif data.command == "inspect" then
             if data.primary ~= nil and data.secondary ~= nil then
                 firmware:move_to(data.primary, data.secondary)

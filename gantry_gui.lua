@@ -13,10 +13,10 @@ local MODES = {
     inspect = "inspect",
 }
 
-local gui = {
-    monitor = peripheral.wrap(SIDE_MONITOR),
-    computer_term = term.current(),
+local monitor = peripheral.wrap(SIDE_MONITOR)
+local computer_term = term.current()
 
+local gui = {
     waiting_command = false,
     mode = MODES.inspect,
     current_location = {
@@ -29,6 +29,11 @@ local gui = {
     selection_from = nil,
     mode_change_box = nil,
 }
+
+local function print_term(str)
+    term.redirect(computer_term)
+    print(str)
+end
 
 function gui:init_rednet()
     print("Initializing rednet")
@@ -46,12 +51,12 @@ end
 
 function gui:clean_write()
     squares = {}
-    term.redirect(self.monitor)
+    term.redirect(monitor)
     term.setBackgroundColor(colors.black)
     term.clear()
-    self.monitor.setCursorBlink(false)
+    monitor.setCursorBlink(false)
 
-    local max_x, max_y = self.monitor.getSize()
+    local max_x, max_y = monitor.getSize()
     local usable_x = max_x
     local usable_y = max_y - PIXELS_BOTTOM_ROW
     local width = math.floor(usable_x / GANTRY_N_SECONDARY_AXIS)
@@ -135,7 +140,9 @@ function gui:rednet_receive_loop()
             gui:clean_write()
         elseif protocol == PROTOCOL_CONTROL_ACK then
             local data = textutils.unserialize(message)
-            if data.command == MODES.inspect or data.command == "read_contents" then
+            if data.error ~= nil then
+                self.recent_command_info = data.error
+            elseif data.command == MODES.inspect or data.command == "read_contents" then
                 self.recent_command_info = string.format("Spot %s %s has %s",
                     data.primary, data.secondary, data.contents)
             else
@@ -167,14 +174,13 @@ function gui:parse_location_update(message)
 end
 
 local function request_location_update()
-    print("Sending location broadcast")
+    print_term("Sending location broadcast")
     rednet.broadcast("update_location", PROTOCOL_LOCATION)
 end
 
 function gui:gui_loop()
     while true do
         self:clean_write()
-        term.redirect(self.computer_term)
         local _event, _side, x, y = os.pullEvent("monitor_touch")
 
         if mode_change_box:bound_check(x, y) then
