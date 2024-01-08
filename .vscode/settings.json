@@ -10,7 +10,8 @@
         "paintutils",
         "term",
         "parallel",
-        "fs"
+        "fs",
+        "bit"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"
