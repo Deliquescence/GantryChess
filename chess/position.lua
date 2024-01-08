@@ -1,16 +1,16 @@
-local Setup = {}
+local Position = {}
 
-function Setup.new(board, turn, castling_rights, passant_target)
+function Position.new(board, turn, castling_rights, passant_target)
     local s = {
         board = board,
         turn = turn,
         castling_rights = castling_rights,
         passant_target = passant_target,
     }
-    return setmetatable(s, { __index = Setup })
+    return setmetatable(s, { __index = Position })
 end
 
-function Setup.CastlingRights(white_kingside, white_queenside, black_kingside, black_queensize)
+function Position.CastlingRights(white_kingside, white_queenside, black_kingside, black_queensize)
     return {
         white = {
             kingside = white_kingside and true or false,
@@ -23,4 +23,4 @@ function Setup.CastlingRights(white_kingside, white_queenside, black_kingside, b
     }
 end
 
-return Setup
+return Position

@@ -2,7 +2,7 @@ local fen = {}
 -- local Square = require("square")
 local Piece = require("chess/piece")
 local Color = require("chess/color")
-local Setup = require("chess/setup")
+local Position = require("chess/position")
 local Board = require("chess/board")
 
 
@@ -39,7 +39,7 @@ function fen.parse(str)
 
     local color = Color.from_char(parts[2]) or Color.WHITE
     local castling = parts[3]
-    local castling_rights = Setup.CastlingRights(
+    local castling_rights = Position.CastlingRights(
         castling:find("K"),
         castling:find("Q"),
         castling:find("k"),
