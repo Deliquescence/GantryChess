@@ -1,6 +1,6 @@
 ---@diagnostic disable: undefined-field
 local MESSAGE = os.getComputerLabel()
-local SIDE_REDSTONE = "back"
+local SIDE_REDSTONE = "left"
 local SIDE_MODEM = "right"
 PROTOCOL_LOCATION = "gantry_location"
 PROTOCOL_CONTROL = "gantry_control"
