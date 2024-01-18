@@ -96,7 +96,7 @@ function firmware:wait_for_movement(axis, target)
             self:parse_location_update(message)
             local fast = self:can_go_fast()
             self:set_high_speed(fast)
-            if message == axis .. "_" .. target then
+            if message:find(axis .. "_" .. target) then
                 self.moving_to[axis] = nil
                 return true
             end
