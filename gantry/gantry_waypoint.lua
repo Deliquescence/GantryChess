@@ -1,10 +1,9 @@
 ---@diagnostic disable: undefined-field
-local MESSAGE = require("gantry_client_config")
+local MESSAGE = os.getComputerLabel()
 local SIDE_REDSTONE = "back"
 local SIDE_MODEM = "right"
 PROTOCOL_LOCATION = "gantry_location"
 PROTOCOL_CONTROL = "gantry_control"
-local MAX_ATTEMPTS = 20
 
 local client = {}
 
