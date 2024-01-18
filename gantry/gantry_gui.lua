@@ -178,13 +178,13 @@ end
 function gui:parse_location_update(message)
     if message == nil then return end
 
-    local primary = message:find("primary_")
-    local secondary = message:find("secondary_")
+    local _, primary = message:find("primary_")
+    local _, secondary = message:find("secondary_")
     if primary then
-        self.current_location.primary = tonumber(message:sub(primary))
+        self.current_location.primary = tonumber(message:sub(primary + 1))
         -- print("primary at " .. self.current_location.primary)
     elseif secondary then
-        self.current_location.secondary = tonumber(message:sub(secondary))
+        self.current_location.secondary = tonumber(message:sub(secondary + 1))
         -- print("secondary at " .. self.current_location.secondary)
     end
 end
