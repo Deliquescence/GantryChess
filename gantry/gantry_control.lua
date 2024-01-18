@@ -14,7 +14,7 @@ local SIDE_MODEM = "bottom"
 PROTOCOL_CONTROL = "gantry_control"
 PROTOCOL_CONTROL_ACK = "gantry_control_ack"
 
-local firmware = require("gantry/gantry_firmware")
+local firmware = require("gantry_firmware")
 
 local control = {
     holding = nil,
