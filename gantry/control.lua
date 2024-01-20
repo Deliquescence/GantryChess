@@ -23,6 +23,7 @@ function control:init()
     print("Checking if payload is attached")
     firmware:lower_piston()
     self:init_check_head()
+    self:inspect_spot()
 
     if not firmware:at_valid_location() then
         print("Bad location, resetting")
@@ -49,17 +50,32 @@ function control:init_check_head(second_check)
         firmware:lower_piston()
     else
         print("Found " .. status .. " on head")
-        if not firmware:at_valid_location() then
-            print("Location bad, but have payload. Moving to 0 0.")
-            firmware:reset_location()
-            self:init_check_head(true)
+        if firmware:at_valid_location() then
+            print("Location good")
+            local saved_contents = self:read_spot_contents(firmware.current_location.primary,
+                firmware.current_location.secondary)
+            if saved_contents == "none" then
+                print("Don't think there's anything in this spot, unsticking")
+                firmware:raise_piston()
+                firmware:toggle_sticker()
+                firmware:lower_piston()
+                return self:init_check_head(true)
+            else
+                print("Something may already be here")
+            end
         else
-            print("Location good, unsticking.")
-            firmware:raise_piston()
-            firmware:toggle_sticker()
-            firmware:lower_piston()
-            self:init_check_head(true)
+            print("Location bad, but have payload.")
+            firmware:reset_location()
         end
+
+        local safe_primary, safe_secondary = self:find_empty_spot()
+        if safe_primary == nil then
+            print("Nowhere safe to put payload, apparently")
+            error()
+        end
+        print("Should be able to place at " .. safe_primary .. " " .. safe_secondary)
+        firmware:move_to(safe_primary, safe_secondary)
+        self:init_check_head(true)
     end
 end
 
@@ -134,7 +150,7 @@ function control:inspect_spot()
     firmware:lower_piston()
     local lower_status = firmware:get_head_status()
     if lower_status ~= "none" then
-        print("Sticker toggle was in wong state, need to release ".. lower_status)
+        print("Sticker toggle was in wong state, need to release " .. lower_status)
         firmware:toggle_sticker()
         return control:inspect_spot()
     end
@@ -167,6 +183,24 @@ end
 
 function control:get_state_file_path(primary, secondary)
     return "/grid_state/" .. primary .. "/" .. secondary
+end
+
+function control:find_empty_spot(allow_unknown)
+    for s = 0, GANTRY_N_SECONDARY_AXIS do
+        for p = 0, GANTRY_N_PRIMARY_AXIS do
+            local contents = self:read_spot_contents(p, s)
+            if contents == "none" then
+                return p, s
+            elseif contents == "unknown" and allow_unknown then
+                return p, s
+            end
+        end
+    end
+    if allow_unknown then
+        return nil
+    else
+        return self:find_empty_spot(true)
+    end
 end
 
 function control:host_control_rpc()
@@ -208,5 +242,11 @@ function control:host_control_rpc()
     end
 end
 
-control:init()
-control:host_control_rpc()
+if pcall(debug.getlocal, 4, 1) then
+    -- print("in package")
+    return control
+else
+    -- print("in main script")
+    control:init()
+    control:host_control_rpc()
+end

@@ -3,6 +3,9 @@ PROTOCOL_CONTROL_ACK = "gantry_control_ack"
 PROTOCOL_LOCATION = "gantry_location"
 PROTOCOL_HEAD = "gantry_head"
 
+GANTRY_N_PRIMARY_AXIS = 8
+GANTRY_N_SECONDARY_AXIS = 12
+
 local control = {
     SIDE_AXIS_CONTROL = "back",
     SIDE_THROTTLE = "left", -- redstone enabled means double speed
@@ -18,8 +21,6 @@ local control = {
 local gui = {
     SIDE_MODEM = "left",
     SIDE_MONITOR = "right",
-    GANTRY_N_PRIMARY_AXIS = 8,
-    GANTRY_N_SECONDARY_AXIS = 12,
 }
 
 local head = {

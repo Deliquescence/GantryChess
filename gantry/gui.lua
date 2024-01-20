@@ -56,16 +56,16 @@ function gui:clean_write()
     local max_x, max_y = monitor.getSize()
     local usable_x = max_x
     local usable_y = max_y - PIXELS_BOTTOM_ROW
-    local width = math.floor(usable_x / config.GANTRY_N_SECONDARY_AXIS)
-    local height = math.floor(usable_y / config.GANTRY_N_PRIMARY_AXIS)
-    for i = 0, config.GANTRY_N_SECONDARY_AXIS - 1, 1 do
-        for j = 0, config.GANTRY_N_PRIMARY_AXIS - 1, 1 do
+    local width = math.floor(usable_x / GANTRY_N_SECONDARY_AXIS)
+    local height = math.floor(usable_y / GANTRY_N_PRIMARY_AXIS)
+    for i = 0, GANTRY_N_SECONDARY_AXIS - 1, 1 do
+        for j = 0, GANTRY_N_PRIMARY_AXIS - 1, 1 do
             -- different coordinate system
-            local primary = config.GANTRY_N_PRIMARY_AXIS - j - 1
+            local primary = GANTRY_N_PRIMARY_AXIS - j - 1
             local secondary = i
 
             -- make lower right light colored
-            local parity = (i + j) % 2 == (config.GANTRY_N_PRIMARY_AXIS + config.GANTRY_N_SECONDARY_AXIS) % 2
+            local parity = (i + j) % 2 == (GANTRY_N_PRIMARY_AXIS + GANTRY_N_SECONDARY_AXIS) % 2
             local color = colors.gray
             if parity then color = colors.lightGray end
 
