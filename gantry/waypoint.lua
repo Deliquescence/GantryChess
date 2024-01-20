@@ -1,14 +1,12 @@
 ---@diagnostic disable: undefined-field
+
+local config = require("config").waypoint
 local MESSAGE = os.getComputerLabel()
-local SIDE_REDSTONE = "left"
-local SIDE_MODEM = "right"
-PROTOCOL_LOCATION = "gantry_location"
-PROTOCOL_CONTROL = "gantry_control"
 
 local client = {}
 
 function client:check_and_notify()
-    if redstone.getInput(SIDE_REDSTONE) then
+    if redstone.getInput(config.SIDE_REDSTONE) then
         self:notify()
     end
 end
@@ -19,7 +17,7 @@ end
 
 function client:init_rednet()
     print("Initializing rednet")
-    rednet.open(SIDE_MODEM)
+    rednet.open(config.SIDE_MODEM)
     -- host_id = rednet.lookup(PROTOCOL_CONTROL)
     -- local attempts = 1
     -- while host_id == nil do

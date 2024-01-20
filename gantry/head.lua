@@ -1,13 +1,10 @@
-PROTOCOL_HEAD = "gantry_head"
--- PROTOCOL_CONTROL = "gantry_control"
-SIDE_MODEM = "right"
-local INFO_SLOT = 1
+local config = require("config").head
 
 rednet.host(PROTOCOL_HEAD, "gantry0_head")
 
 local function init_rednet()
     print("Initializing rednet")
-    rednet.open(SIDE_MODEM)
+    rednet.open(config.SIDE_MODEM)
     -- host_id = rednet.lookup(PROTOCOL_CONTROL)
     -- local attempts = 1
     -- while host_id == nil do
@@ -38,7 +35,7 @@ local function get_status()
         return "error_bad_peripheral"
     end
     local inventory = peripheral.wrap("top")
-    local info = inventory.getItemDetail(INFO_SLOT)
+    local info = inventory.getItemDetail(config.INFO_SLOT)
 
     if info == nil then
         print("error: inventory present but no item in slot")

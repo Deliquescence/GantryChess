@@ -1,5 +1,4 @@
-PROTOCOL_LOCATION = "gantry_location"
-PROTOCOL_HEAD = "gantry_head"
+local config = require("config").control
 
 local firmware = {
     current_location = {
@@ -27,7 +26,7 @@ end
 
 function firmware:set_high_speed(enable)
     if enable == nil then enable = true end
-    redstone.setOutput(SIDE_THROTTLE, enable)
+    redstone.setOutput(config.SIDE_THROTTLE, enable)
 end
 
 function firmware:can_go_fast()
@@ -56,7 +55,7 @@ end
 
 function firmware:move_axis(axis, to)
     self.moving_to.axis = axis
-    redstone.setOutput(SIDE_THROTTLE, self:can_go_fast())
+    redstone.setOutput(config.SIDE_THROTTLE, self:can_go_fast())
     if to < self.current_location[axis] then
         if axis == "primary" then
             self:move_backward()
@@ -134,58 +133,58 @@ function firmware:parse_location_update(message)
 end
 
 function firmware:move_forward()
-    redstone.setOutput(SIDE_AXIS_CONTROL, false)
-    redstone.setOutput(SIDE_GEARSHIFT, false)
+    redstone.setOutput(config.SIDE_AXIS_CONTROL, false)
+    redstone.setOutput(config.SIDE_GEARSHIFT, false)
 end
 
 function firmware:move_backward()
-    redstone.setOutput(SIDE_AXIS_CONTROL, false)
-    redstone.setOutput(SIDE_GEARSHIFT, true)
+    redstone.setOutput(config.SIDE_AXIS_CONTROL, false)
+    redstone.setOutput(config.SIDE_GEARSHIFT, true)
 end
 
 function firmware:move_left()
-    redstone.setAnalogOutput(SIDE_AXIS_CONTROL, SECONDARY_AXIS_POWER_LEVEL - 1)
-    redstone.setOutput(SIDE_GEARSHIFT, true)
+    redstone.setAnalogOutput(config.SIDE_AXIS_CONTROL, config.SECONDARY_AXIS_POWER_LEVEL - 1)
+    redstone.setOutput(config.SIDE_GEARSHIFT, true)
 end
 
 function firmware:move_right()
-    redstone.setAnalogOutput(SIDE_AXIS_CONTROL, SECONDARY_AXIS_POWER_LEVEL - 1)
-    redstone.setOutput(SIDE_GEARSHIFT, false)
+    redstone.setAnalogOutput(config.SIDE_AXIS_CONTROL, config.SECONDARY_AXIS_POWER_LEVEL - 1)
+    redstone.setOutput(config.SIDE_GEARSHIFT, false)
 end
 
 function firmware:halt_axis(axis)
     -- print("HALT " .. axis)
     if axis == "primary" then
-        redstone.setAnalogOutput(SIDE_AXIS_CONTROL, SECONDARY_AXIS_POWER_LEVEL - 1)
+        redstone.setAnalogOutput(config.SIDE_AXIS_CONTROL, config.SECONDARY_AXIS_POWER_LEVEL - 1)
     else
-        redstone.setOutput(SIDE_AXIS_CONTROL, true)
+        redstone.setOutput(config.SIDE_AXIS_CONTROL, true)
     end
 end
 
 function firmware:raise_piston()
     self:set_high_speed(true)
-    redstone.setOutput(SIDE_GEARSHIFT, true)
-    redstone.setOutput(SIDE_HEAD_CLUTCH, true)
-    sleep(PISTON_DEBOUNCE)
-    redstone.setOutput(SIDE_HEAD_CLUTCH, false)
-    sleep(PISTON_DEBOUNCE)
+    redstone.setOutput(config.SIDE_GEARSHIFT, true)
+    redstone.setOutput(config.SIDE_HEAD_CLUTCH, true)
+    sleep(config.PISTON_DEBOUNCE)
+    redstone.setOutput(config.SIDE_HEAD_CLUTCH, false)
+    sleep(config.PISTON_DEBOUNCE)
 end
 
 function firmware:lower_piston()
     self:set_high_speed(true)
-    redstone.setOutput(SIDE_GEARSHIFT, false)
-    redstone.setOutput(SIDE_HEAD_CLUTCH, true)
-    sleep(PISTON_DEBOUNCE)
-    redstone.setOutput(SIDE_HEAD_CLUTCH, false)
-    sleep(PISTON_DEBOUNCE)
+    redstone.setOutput(config.SIDE_GEARSHIFT, false)
+    redstone.setOutput(config.SIDE_HEAD_CLUTCH, true)
+    sleep(config.PISTON_DEBOUNCE)
+    redstone.setOutput(config.SIDE_HEAD_CLUTCH, false)
+    sleep(config.PISTON_DEBOUNCE)
 end
 
 function firmware:toggle_sticker()
-    sleep(STICKER_DEBOUNCE)
-    redstone.setOutput(SIDE_STICKER, true)
-    sleep(STICKER_DEBOUNCE)
-    redstone.setOutput(SIDE_STICKER, false)
-    sleep(STICKER_DEBOUNCE)
+    sleep(config.STICKER_DEBOUNCE)
+    redstone.setOutput(config.SIDE_STICKER, true)
+    sleep(config.STICKER_DEBOUNCE)
+    redstone.setOutput(config.SIDE_STICKER, false)
+    sleep(config.STICKER_DEBOUNCE)
 end
 
 return firmware

@@ -1,18 +1,4 @@
--- clockwise input into gearshift
-SIDE_AXIS_CONTROL = "back"
-SIDE_THROTTLE = "left" -- redstone enabled means double speed
-SIDE_STICKER = "right"
-SIDE_GEARSHIFT = "top"
-SIDE_HEAD_CLUTCH = "front"
-
-SECONDARY_AXIS_POWER_LEVEL = 2
-
-PISTON_DEBOUNCE = 0.8
-STICKER_DEBOUNCE = 0.20
-
-local SIDE_MODEM = "bottom"
-PROTOCOL_CONTROL = "gantry_control"
-PROTOCOL_CONTROL_ACK = "gantry_control_ack"
+local config = require("config").control
 
 local firmware = require("firmware")
 
@@ -23,12 +9,12 @@ local control = {
 function control:init()
     print("Initializing...")
 
-    rednet.open(SIDE_MODEM)
+    rednet.open(config.SIDE_MODEM)
     rednet.host(PROTOCOL_CONTROL, "gantry0_control")
 
     for _, side in pairs(redstone.getSides()) do
         -- Stop axis movement, reset everything else
-        local enable = side == SIDE_AXIS_CONTROL
+        local enable = side == config.SIDE_AXIS_CONTROL
         redstone.setOutput(side, enable)
     end
 

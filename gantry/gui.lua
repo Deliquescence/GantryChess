@@ -1,11 +1,7 @@
 ---@diagnostic disable: undefined-field
-local SIDE_MODEM = "left"
-local SIDE_MONITOR = "right"
-PROTOCOL_CONTROL = "gantry_control"
-PROTOCOL_CONTROL_ACK = "gantry_control_ack"
-PROTOCOL_LOCATION = "gantry_location"
-GANTRY_N_PRIMARY_AXIS = 8
-GANTRY_N_SECONDARY_AXIS = 12
+
+local config = require("config").gui
+
 local PIXELS_BOTTOM_ROW = 5
 local MODES = {
     move = "move_to",
@@ -13,7 +9,7 @@ local MODES = {
     inspect = "inspect",
 }
 
-local monitor = peripheral.wrap(SIDE_MONITOR)
+local monitor = peripheral.wrap(config.SIDE_MONITOR)
 local computer_term = term.current()
 
 local gui = {
@@ -38,7 +34,7 @@ end
 
 function gui:init_rednet()
     print("Initializing rednet")
-    rednet.open(SIDE_MODEM)
+    rednet.open(config.SIDE_MODEM)
     self.host_id = rednet.lookup(PROTOCOL_CONTROL)
     local attempts = 1
     while self.host_id == nil do
@@ -60,16 +56,16 @@ function gui:clean_write()
     local max_x, max_y = monitor.getSize()
     local usable_x = max_x
     local usable_y = max_y - PIXELS_BOTTOM_ROW
-    local width = math.floor(usable_x / GANTRY_N_SECONDARY_AXIS)
-    local height = math.floor(usable_y / GANTRY_N_PRIMARY_AXIS)
-    for i = 0, GANTRY_N_SECONDARY_AXIS - 1, 1 do
-        for j = 0, GANTRY_N_PRIMARY_AXIS - 1, 1 do
+    local width = math.floor(usable_x / config.GANTRY_N_SECONDARY_AXIS)
+    local height = math.floor(usable_y / config.GANTRY_N_PRIMARY_AXIS)
+    for i = 0, config.GANTRY_N_SECONDARY_AXIS - 1, 1 do
+        for j = 0, config.GANTRY_N_PRIMARY_AXIS - 1, 1 do
             -- different coordinate system
-            local primary = GANTRY_N_PRIMARY_AXIS - j - 1
+            local primary = config.GANTRY_N_PRIMARY_AXIS - j - 1
             local secondary = i
 
             -- make lower right light colored
-            local parity = (i + j) % 2 == (GANTRY_N_PRIMARY_AXIS + GANTRY_N_SECONDARY_AXIS) % 2
+            local parity = (i + j) % 2 == (config.GANTRY_N_PRIMARY_AXIS + config.GANTRY_N_SECONDARY_AXIS) % 2
             local color = colors.gray
             if parity then color = colors.lightGray end
 
