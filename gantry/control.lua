@@ -108,6 +108,11 @@ function control:grab()
     end
     firmware:toggle_sticker()
     firmware:lower_piston()
+    local lower_status = firmware:get_head_status()
+    if lower_status == "none" and status ~= "none" then
+        print("Sticker toggle was in wong state, need to grab again")
+        return control:grab()
+    end
     self:write_spot_contents("none")
 end
 
@@ -127,6 +132,12 @@ function control:inspect_spot()
         firmware.current_location.primary,
         firmware.current_location.secondary))
     firmware:lower_piston()
+    local lower_status = firmware:get_head_status()
+    if lower_status ~= "none" then
+        print("Sticker toggle was in wong state, need to release ".. lower_status)
+        firmware:toggle_sticker()
+        return control:inspect_spot()
+    end
     self:write_spot_contents(status)
 
     return status
