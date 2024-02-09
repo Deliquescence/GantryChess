@@ -162,6 +162,9 @@ end
 function control:write_spot_contents(contents, primary, secondary)
     if primary == nil then primary = firmware.current_location.primary end
     if secondary == nil then secondary = firmware.current_location.secondary end
+    if not primary or not secondary then
+        return
+    end
 
     local path = self:get_state_file_path(primary, secondary)
     local file = fs.open(path, "w")
@@ -170,6 +173,9 @@ function control:write_spot_contents(contents, primary, secondary)
 end
 
 function control:read_spot_contents(primary, secondary)
+    if not primary or not secondary then
+        return "unknown"
+    end
     local path = self:get_state_file_path(primary, secondary)
     if fs.exists(path) then
         local file = fs.open(path, "r")
