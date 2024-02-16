@@ -7,6 +7,8 @@ local control = {
 }
 
 function control:init()
+    -- Try and stop movement as soon as possible to avoid chunk shearing gantry shaft
+    redstone.setOutput(config.SIDE_AXIS_CONTROL, true)
     print("Initializing...")
 
     rednet.open(config.SIDE_MODEM)
